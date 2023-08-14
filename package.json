@@ -1,0 +1,20 @@
+{
+  "name": "sincroniaweb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "esm": "^3.2.25",
+    "mdb-reader": "^2.2.6",
+    "mysql2": "^3.6.0",
+    "node-adodb": "^5.0.3",
+    "ping": "^0.4.4"
+  }
+}
