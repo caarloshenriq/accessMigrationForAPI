@@ -1,31 +1,39 @@
 const adodb = require("node-adodb");
 const axios = require("axios");
 
-async function produtos() {
-  const dbFilePath = "C:/APPLoja/APPLoja.accdb";
+const dbFilePath = "C:/APPLoja/APPLoja.accdb";
+
+async function fetchData(query) {
+  try {
+    const connection = adodb.open(`Provider=Microsoft.ACE.OLEDB.12.0;Data Source=${dbFilePath}`); //acessa o banco de dados access
+    return await connection.query(query); // aguarda a query ser passada quando for chamada dentro de outra função
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw error;
+  }
+}
+
+async function sendData(url, data, successMessage) { //função de importação para a api, aguarda a url da api, os dados a serem enviados e a mensagem de sucesso
+  try {
+    await axios.post(url, data); 
+    console.log(successMessage, data);
+  } catch (error) {
+    console.error("API Error:", error);
+  }
+}
+
+//função que realiza a migração dos produtos
+async function migrateProducts() {
+  const query = "SELECT * FROM tblProdutos";
 
   try {
-    // Ler o arquivo do Access
-    const connection = adodb.open(
-      `Provider=Microsoft.ACE.OLEDB.12.0;Data Source=${dbFilePath}`
-    );
-    const rs = await connection.query("SELECT * FROM tblProdutos");
+    const rs = await fetchData(query);
 
-    // Iterar sobre os registros da tabela tblProdutos do Access
     for (const row of rs) {
-      const name = row.NomeProduto;
-      const price = row.PrecoVenda;
-      const barCode = row.CodigoBarras;
-
-      // Enviar os dados do produto para a API
+      const { NomeProduto: name, PrecoVenda: price, CodigoBarras: barCode } = row;
       const productData = { name, price, barCode };
-
-      try {
-        await axios.post("http://localhost:8800/product", productData);
-        console.log("Produto enviado para a API:", productData);
-      } catch (error) {
-        console.error("Erro ao enviar produto para a API:", error);
-      }
+      
+      await sendData("http://localhost:8800/product", productData, "Produto enviado para a API:");
     }
 
     console.log("Migração tabela Produtos realizada com sucesso");
@@ -34,36 +42,18 @@ async function produtos() {
   }
 }
 
-produtos();
-
-async function pessoas() {
-  const dbFilePath = "C:/APPLoja/APPLoja.accdb";
+//função onde realiza a migração dos lançamentos do caixa 
+async function migrateCashToday() {
+  const query = "SELECT * FROM tblLancamentosCaixa";
 
   try {
-    // Ler o arquivo do Access
-    const connection = adodb.open(
-      `Provider=Microsoft.ACE.OLEDB.12.0;Data Source=${dbFilePath}`
-    );
-    const rs = await connection.query("SELECT * FROM tblLancamentosCaixa");
+    const rs = await fetchData(query);
 
-    console.log(rs)
-
-    // Iterar sobre os registros da tabela tblProdutos do Access
     for (const row of rs) {
-      const type = row.TipoTransacao;
-      const value = row.Valor;
-      const saldo = row.SaldoCaixa;
-      const ref = row.Referencia;
-
-      // Enviar os dados do produto para a API
-      const productData = { type, value,saldo, ref};
-
-      try {
-        await axios.post("http://localhost:8800/lancamento", productData);
-        console.log("Pessoa cadastrada na API:", productData);
-      } catch (error) {
-        console.error("Erro ao cadastrar pessoa na API:", error);
-      }
+      const { TipoTransacao: type, Valor: value, SaldoCaixa: saldo, Referencia: ref } = row;
+      const personData = { type, value, saldo, ref };
+      
+      await sendData("http://localhost:8800/lancamento", personData, "Pessoa cadastrada na API:");
     }
 
     console.log("Migração tabela pessoas realizada com sucesso");
@@ -72,37 +62,18 @@ async function pessoas() {
   }
 }
 
-pessoas();
-
-
-async function caixa() {
-  const dbFilePath = "C:/APPLoja/APPLoja.accdb";
+//função que realiza a migração dos caixas
+async function migrateCash() {
+  const query = "SELECT * FROM tblCaixas";
 
   try {
-    // Ler o arquivo do Access
-    const connection = adodb.open(
-      `Provider=Microsoft.ACE.OLEDB.12.0;Data Source=${dbFilePath}`
-    );
-    const rs = await connection.query("SELECT * FROM tblCaixas");
+    const rs = await fetchData(query);
 
-    console.log(rs)
-
-    // Iterar sobre os registros da tabela tblProdutos do Access
     for (const row of rs) {
-      const data = row.Data;
-      const valueInitial = row.ValorInicial;
-      const valueFinal = row.ValorFechamento;
-    
-
-      // Enviar os dados do produto para a API
-      const productData = { data, valueInitial, valueFinal};
-
-      try {
-        await axios.post("http://localhost:8800/caixa", productData);
-        console.log("Pessoa cadastrada na API:", productData);
-      } catch (error) {
-        console.error("Erro ao cadastrar pessoa na API:", error);
-      }
+      const { Data: date, ValorInicial: valueInitial, ValorFechamento: valueFinal } = row;
+      const cashData = { date, valueInitial, valueFinal };
+      
+      await sendData("http://localhost:8800/caixa", cashData, "Caixa cadastrado na API:");
     }
 
     console.log("Migração tabela caixa realizada com sucesso");
@@ -111,4 +82,7 @@ async function caixa() {
   }
 }
 
-caixa();
+// Call the migration functions as needed
+migrateProducts();
+migratePeople();
+migrateCash();
